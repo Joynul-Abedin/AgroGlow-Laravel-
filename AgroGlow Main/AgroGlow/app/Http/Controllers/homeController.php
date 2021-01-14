@@ -80,11 +80,6 @@ class homeController extends Controller
             $pendingRequests = $totalRequest - $acceptedRequest;
         }
 
-<<<<<<< Updated upstream
-=======
-        //$tasks = ($acceptedRequest/$totalRequest)*100;
-        $pendingRequests = $totalRequest - $acceptedRequest;
->>>>>>> Stashed changes
 
         if($req->session()->get('userType') == 'admin'){
             return redirect()->route('admin');
@@ -118,7 +113,6 @@ class homeController extends Controller
             'email'=>'required',
             'DOB'=>'required',
             'contact'=>'required|min:11',
-            
            ]);
 
         $user = user::find($req->session()->get('userId'));
