@@ -14,72 +14,80 @@ use GuzzleHttp\Client;
 class adminController extends Controller
 {
 
-    public function home(Request $req){
-        $user = user::find($req->session()->get('userId'));
+    public function home(Request $req)
+    {
+        $user = user::where('email', $req->session()->get('userName'))->get();
         $products = product::all();
         $notification = productRequest::all();
         $total = 0;
-        $totalRequest = 0;
+        $totalRequest = 1;
         $purchaseTotal = 0;
         $acceptedRequest = 0;
         $tasks = 0;
         $pendingRequests = 0;
 
 
-        for($i = 0; $i < count($notification); $i++){
+        for ($i = 0; $i < count($notification); $i++) {
             $totalRequest = $totalRequest + 1;
-            if($notification[$i]['approval'] == 'accepted'){
+            if ($notification[$i]['approval'] == 'accepted') {
                 $total = $total + $notification[$i]['price'];
                 $acceptedRequest = $acceptedRequest + 1;
             }
         }
 
-        for($i = 0; $i < count($products); $i++){
-            $purchaseTotal = $purchaseTotal + ((float)$products[$i]['price']*(int)$products[$i]['quantity']);
+        for ($i = 0; $i < count($products); $i++) {
+            $purchaseTotal = $purchaseTotal + ((float)$products[$i]['price'] * (int)$products[$i]['quantity']);
         }
 
-        $tasks = ($acceptedRequest/$totalRequest)*100;
+        $tasks = ($acceptedRequest / $totalRequest) * 100;
         $pendingRequests = $totalRequest - $acceptedRequest;
-      
-            return view('user.admin.adminDashboard', $user)->with('total', $total)->with('purchaseTotal', $purchaseTotal)->with('tasks', $tasks)->with('pendingRequests', $pendingRequests);
+        // dd($user[0]->name);
+        return view('user.admin.adminDashboard', $user)->with('total', $total)
+            ->with('purchaseTotal', $purchaseTotal)
+            ->with('tasks', $tasks)
+            ->with('user', $user)
+            ->with('pendingRequests', $pendingRequests);
     }
 
 
-    public function profile(Request $req){
+    public function profile(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $userInfo = user::where('userId', $user['userId'])
-                    ->get();
+            ->get();
 
-        return view('user.admin.profile',$user)->with('userInfo', $userInfo);
+        return view('user.admin.profile', $user)->with('userInfo', $userInfo);
     }
 
-    public function profile_edited(Request $req){
+    public function profile_edited(Request $req)
+    {
 
         $req->validate([
-            'name'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11|max:11',
-            
-           ]);
+            'name' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11|max:11',
+
+        ]);
 
         $user = user::find($req->session()->get('userId'));
         $userInfo = user::where('userId', $user['userId'])
-                    ->get();
+            ->get();
 
         $user->name = $req->name;
         $user->email = $req->email;
         $user->DOB = $req->DOB;
         $user->contact = $req->contact;
 
-            if($user->save()){
-                return back();
-            }
+        if ($user->save()) {
+            return back();
+        }
     }
 
-    public function seeManagers(Request $req){
+    public function seeManagers(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $client = new Client();
@@ -88,13 +96,14 @@ class adminController extends Controller
         if ($response->getStatusCode() == 200) {
             $managers = json_decode($response->getBody(), true);
             $manager = json_decode($managers, true);
-            return view('user.admin.seeManagers',$user)->with('manager', $manager);
+            return view('user.admin.seeManagers', $user)->with('manager', $manager);
         } else {
             echo "Not get";
         }
     }
 
-    public function seeSellers(Request $req){
+    public function seeSellers(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $client = new Client();
@@ -103,13 +112,14 @@ class adminController extends Controller
         if ($response->getStatusCode() == 200) {
             $sellers = json_decode($response->getBody(), true);
             $seller = json_decode($sellers, true);
-            return view('user.admin.seeSellers',$user)->with('seller', $seller);
+            return view('user.admin.seeSellers', $user)->with('seller', $seller);
         } else {
             echo "Not get";
         }
     }
 
-    public function seeFarmers(Request $req){
+    public function seeFarmers(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $client = new Client();
@@ -118,37 +128,39 @@ class adminController extends Controller
         if ($response->getStatusCode() == 200) {
             $farmers = json_decode($response->getBody(), true);
             $farmer = json_decode($farmers, true);
-            return view('user.admin.seeFarmers',$user)->with('farmer', $farmer);
+            return view('user.admin.seeFarmers', $user)->with('farmer', $farmer);
         } else {
             echo "Not get";
         }
     }
 
-    public function addManager(Request $req){
+    public function addManager(Request $req)
+    {
 
-        $user = user::find($req->session()->get('userId'));
+        $user = user::where('email', $req->session()->get('userName'))->get();
 
-        return view('user.admin.addManager',$user);
+        return view('user.admin.addManager')->with('user', $user);
     }
 
-    public function addedManager(Request $req){
+    public function addedManager(Request $req)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'userName'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            'password'=>'required',
-            'repassword'=>'required',
-            
-           ]);
+
+            'name' => 'required',
+            'userName' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+            'password' => 'required',
+            'repassword' => 'required',
+
+        ]);
 
         $user = user::find($req->session()->get('userId'));
         $manager = new user;
 
-        if($req->password == $req->password){
+        if ($req->password == $req->password) {
 
             $manager->name = $req->name;
             $manager->userName = $req->userName;
@@ -160,40 +172,42 @@ class adminController extends Controller
             $manager->password = $req->password;
             $manager->validity = 'valid';
 
-            if($manager->save()){
+            if ($manager->save()) {
                 return redirect()->route('admin_seeManagers');
             }
-        }else{           
+        } else {
             return redirect()->route('admin_addManager');
         }
     }
 
-    public function addSeller(Request $req){
+    public function addSeller(Request $req)
+    {
 
-        $user = user::find($req->session()->get('userId'));
+        $user = user::where('email', $req->session()->get('userName'))->get();
 
-        return view('user.admin.addSeller',$user);
+        return view('user.admin.addSeller')->with('user', $user);
     }
 
-    public function addedSeller(Request $req){
+    public function addedSeller(Request $req)
+    {
 
 
         $req->validate([
-            
-            'name'=>'required',
-            'userName'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            'password'=>'required',
-            'repassword'=>'required',
-            
-           ]);
+
+            'name' => 'required',
+            'userName' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+            'password' => 'required',
+            'repassword' => 'required',
+
+        ]);
 
         $user = user::find($req->session()->get('userId'));
         $seller = new user;
 
-        if($req->password == $req->password){
+        if ($req->password == $req->password) {
 
             $seller->name = $req->name;
             $seller->userName = $req->userName;
@@ -205,39 +219,41 @@ class adminController extends Controller
             $seller->password = $req->password;
             $seller->validity = 'valid';
 
-            if($seller->save()){
+            if ($seller->save()) {
                 return redirect()->route('admin_seeSellers');
             }
-        }else{           
+        } else {
             return redirect()->route('admin_addSeller');
         }
     }
 
-    public function addFarmer(Request $req){
+    public function addFarmer(Request $req)
+    {
 
-        $user = user::find($req->session()->get('userId'));
+        $user = user::where('email', $req->session()->get('userName'))->get();
 
-        return view('user.admin.addFarmer',$user);
+        return view('user.admin.addFarmer')->with('user', $user);
     }
 
-    public function addedFarmer(Request $req){
+    public function addedFarmer(Request $req)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'userName'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            'password'=>'required',
-            'repassword'=>'required',
-            
-           ]);
+
+            'name' => 'required',
+            'userName' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+            'password' => 'required',
+            'repassword' => 'required',
+
+        ]);
 
         $user = user::find($req->session()->get('userId'));
         $farmer = new user;
 
-        if($req->password == $req->password){
+        if ($req->password == $req->password) {
 
             $farmer->name = $req->name;
             $farmer->userName = $req->userName;
@@ -249,354 +265,374 @@ class adminController extends Controller
             $farmer->password = $req->password;
             $farmer->validity = 'valid';
 
-            if($farmer->save()){
+            if ($farmer->save()) {
                 return redirect()->route('admin_seeFarmers');
             }
-        }else{           
+        } else {
             return redirect()->route('admin_addFarmer');
         }
     }
 
-    public function customizeManager(Request $req){
+    public function customizeManager(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $manager = user::where('userType', 'manager')
-                        ->get();
+            ->get();
 
-        return view('user.admin.customizeManager',$user)->with('manager', $manager);
+        return view('user.admin.customizeManager', $user)->with('manager', $manager);
     }
 
-    public function customizeSeller(Request $req){
+    public function customizeSeller(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $sellers = user::where('userType', 'seller')
-                        ->get();
+            ->get();
 
-        return view('user.admin.customizeSeller',$user)->with('seller', $sellers);
+        return view('user.admin.customizeSeller', $user)->with('seller', $sellers);
     }
 
-    public function editManager(Request $req, $id){
+    public function editManager(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $manager = user::where('userId', $id)->get();
 
-        return view('user.admin.editManager',$user)->with('manager', $manager);
+        return view('user.admin.editManager', $user)->with('manager', $manager);
     }
 
-    public function editedManager(Request $req, $id){
+    public function editedManager(Request $req, $id)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-           ]);
+
+            'name' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+        ]);
 
         $user = user::find($id);
 
-            $user->name = $req->name;
-            $user->email = $req->email;
-            $user->DOB = $req->DOB;
-            $user->contact = $req->contact;
+        $user->name = $req->name;
+        $user->email = $req->email;
+        $user->DOB = $req->DOB;
+        $user->contact = $req->contact;
 
-            if($user->save()){
-                return redirect()->route('admin_customizeManager');
-            }else{           
+        if ($user->save()) {
+            return redirect()->route('admin_customizeManager');
+        } else {
             return back();
         }
     }
 
-    public function validityManager(Request $req){
+    public function validityManager(Request $req)
+    {
 
-        if($req->ajax()){
+        if ($req->ajax()) {
 
             $userId = $req->get('userId');
 
             $user = user::find($userId);
 
-            if($user->validity == 'valid'){
+            if ($user->validity == 'valid') {
                 $user->validity = 'invalid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
-                        'validity'  => 'Unblock',);
+                        'validity'  => 'Unblock',
+                    );
                     echo json_encode($data);
                 }
-            }else{
+            } else {
                 $user->validity = 'valid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
-                        'validity'  => 'Block',);
+                        'validity'  => 'Block',
+                    );
                     echo json_encode($data);
                 }
             }
         }
-
     }
 
-    public function deleteManager(Request $req){
+    public function deleteManager(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $userId = $req->get('userId');
 
             user::find($userId)->delete($userId);
-
         }
     }
 
-    public function editSeller(Request $req, $id){
+    public function editSeller(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $seller = user::where('userId', $id)->get();
 
-        return view('user.admin.editSeller',$user)->with('seller', $seller);
+        return view('user.admin.editSeller', $user)->with('seller', $seller);
     }
 
-    public function editedSeller(Request $req, $id){
+    public function editedSeller(Request $req, $id)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            
-           ]);
+
+            'name' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+
+        ]);
 
         $user = user::find($id);
 
-            $user->name = $req->name;
-            $user->email = $req->email;
-            $user->DOB = $req->DOB;
-            $user->contact = $req->contact;
+        $user->name = $req->name;
+        $user->email = $req->email;
+        $user->DOB = $req->DOB;
+        $user->contact = $req->contact;
 
-            if($user->save()){
-                return redirect()->route('admin_customizeSeller');
-            }else{           
+        if ($user->save()) {
+            return redirect()->route('admin_customizeSeller');
+        } else {
             return back();
         }
     }
 
-    public function validitySeller(Request $req){
+    public function validitySeller(Request $req)
+    {
 
-        if($req->ajax()){
+        if ($req->ajax()) {
 
             $userId = $req->get('userId');
 
             $user = user::find($userId);
 
-            if($user->validity == 'valid'){
+            if ($user->validity == 'valid') {
                 $user->validity = 'invalid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
-                        'validity'  => 'Unblock',);
+                        'validity'  => 'Unblock',
+                    );
                     echo json_encode($data);
                 }
-            }else{
+            } else {
                 $user->validity = 'valid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
-                        'validity'  => 'Block',);
+                        'validity'  => 'Block',
+                    );
                     echo json_encode($data);
                 }
             }
         }
-
     }
 
-    public function deleteSeller(Request $req){
+    public function deleteSeller(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $userId = $req->get('userId');
 
             user::find($userId)->delete($userId);
-
         }
     }
 
-    public function customizeFarmer(Request $req){
+    public function customizeFarmer(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $farmers = user::where('userType', 'farmer')
-                        ->get();
+            ->get();
 
-        return view('user.admin.customizeFarmer',$user)->with('farmer', $farmers);
+        return view('user.admin.customizeFarmer', $user)->with('farmer', $farmers);
     }
 
-    public function editFarmer(Request $req, $id){
+    public function editFarmer(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $farmer = user::where('userId', $id)->get();
 
-        return view('user.admin.editFarmer',$user)->with('farmer', $farmer);
+        return view('user.admin.editFarmer', $user)->with('farmer', $farmer);
     }
 
-    public function editedFarmer(Request $req, $id){
+    public function editedFarmer(Request $req, $id)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            
-           ]);
+
+            'name' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+
+        ]);
 
         $user = user::find($id);
 
-            $user->name = $req->name;
-            $user->email = $req->email;
-            $user->DOB = $req->DOB;
-            $user->contact = $req->contact;
+        $user->name = $req->name;
+        $user->email = $req->email;
+        $user->DOB = $req->DOB;
+        $user->contact = $req->contact;
 
-            if($user->save()){
-                return redirect()->route('admin_customizeFarmer');
-            }else{           
+        if ($user->save()) {
+            return redirect()->route('admin_customizeFarmer');
+        } else {
             return back();
-            }
+        }
     }
 
-    public function validityFarmer(Request $req){
+    public function validityFarmer(Request $req)
+    {
 
-        if($req->ajax()){
+        if ($req->ajax()) {
 
             $userId = $req->get('userId');
 
             $user = user::find($userId);
 
-            if($user->validity == 'valid'){
+            if ($user->validity == 'valid') {
                 $user->validity = 'invalid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
-                        'validity'  => 'Unblock',);
+                        'validity'  => 'Unblock',
+                    );
                     echo json_encode($data);
                 }
-            }else{
+            } else {
                 $user->validity = 'valid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
-                        'validity'  => 'Block',);
+                        'validity'  => 'Block',
+                    );
                     echo json_encode($data);
                 }
             }
         }
-
     }
 
-    public function deleteFarmer(Request $req){
+    public function deleteFarmer(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $userId = $req->get('userId');
 
             user::find($userId)->delete($userId);
-
         }
-   
     }
 
-    public function addCategory(Request $req){
+    public function addCategory(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
-        return view('user.admin.addCategory',$user);
+        return view('user.admin.addCategory', $user);
     }
 
-    public function addedCategory(Request $req){
+    public function addedCategory(Request $req)
+    {
 
         $req->validate([
-            
-            'category'=>'required',
-            
-           ]);
+
+            'category' => 'required',
+
+        ]);
 
         $category = new category;
-        
+
         $category->catName = $req->category;
 
-        if($category->save()){
+        if ($category->save()) {
             return redirect()->route('admin_seeCategories');
         }
     }
 
-    public function seeCategories(Request $req){
+    public function seeCategories(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $categories = category::all();
 
-        return view('user.admin.seeCategories',$user)->with('category', $categories);
+        return view('user.admin.seeCategories', $user)->with('category', $categories);
     }
 
-    public function editCategory(Request $req, $id){
+    public function editCategory(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $category = category::where('id', $id)->get();
 
-        return view('user.admin.editCategory',$user)->with('category', $category);
+        return view('user.admin.editCategory', $user)->with('category', $category);
     }
 
-    public function editedCategory(Request $req, $id){
+    public function editedCategory(Request $req, $id)
+    {
 
         $category = category::find($id);
 
         $category->catName = $req->catName;
 
-        if($category->save()){
+        if ($category->save()) {
             return redirect()->route('admin_seeCategories');
-        }else{           
-        return back();
+        } else {
+            return back();
         }
     }
 
-    public function deletedCategory(Request $req){
+    public function deletedCategory(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $id = $req->get('id');
 
             category::find($id)->delete($id);
-
         }
-   
     }
 
-    public function addProduct(Request $req){
+    public function addProduct(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $category = category::all();
 
-        return view('user.admin.addProduct',$user)->with('category', $category);
+        return view('user.admin.addProduct', $user)->with('category', $category);
     }
 
-    public function addedProduct(Request $req){
+    public function addedProduct(Request $req)
+    {
 
         $req->validate([
-            
-            'productName'=>'required',
-            'category'=>'required',
-            'price'=>'integer',
-            'quantity'=>'integer',
-            'expDate'=>'required',
-            'description'=>'required',
-            'productImage'=>'required',
-            
-           ]);
+
+            'productName' => 'required',
+            'category' => 'required',
+            'price' => 'integer',
+            'quantity' => 'integer',
+            'expDate' => 'required',
+            'description' => 'required',
+            'productImage' => 'required',
+
+        ]);
 
         $product = new product;
         $productPurchased = new productPurchased;
-        
-        if($req->hasFile('productImage')){
-            
+
+        if ($req->hasFile('productImage')) {
+
             $file = $req->file('productImage');
 
-            if($file->move('upload', $file->getClientOriginalName())){
-               
+            if ($file->move('upload', $file->getClientOriginalName())) {
+
                 $product->productName = $req->productName;
                 $product->category = $req->category;
                 $product->price = $req->price;
@@ -610,66 +646,70 @@ class adminController extends Controller
                 $productPurchased->price = $req->price;
                 $productPurchased->quantity = $req->quantity;
 
-                if($product->save() && $productPurchased->save()){
+                if ($product->save() && $productPurchased->save()) {
                     return redirect()->route('admin_seeProduct');
-                }else{
+                } else {
                     echo 'error';
                 }
             }
-        }else{
+        } else {
             echo 'error';
         }
     }
 
 
-    public function seeProduct(Request $req){
+    public function seeProduct(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $products = product::all();
 
-        return view('user.admin.seeProducts',$user)->with('product', $products);
+        return view('user.admin.seeProducts', $user)->with('product', $products);
     }
 
-    public function customizeProducts(Request $req){
+    public function customizeProducts(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $products = product::all();
 
-        return view('user.admin.customizeProducts',$user)->with('product', $products);
+        return view('user.admin.customizeProducts', $user)->with('product', $products);
     }
 
-    public function editProduct(Request $req, $id){
+    public function editProduct(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $product = product::where('id', $id)->get();
         $categories = category::all();
 
-        return view('user.admin.editProduct',$user)->with('product', $product)->with('category', $categories);
+        return view('user.admin.editProduct', $user)->with('product', $product)->with('category', $categories);
     }
 
-    public function editedProduct(Request $req, $id){
+    public function editedProduct(Request $req, $id)
+    {
 
         $req->validate([
-            
-            'productName'=>'required',
-            'category'=>'required',
-            'price'=>'integer',
-            'quantity'=>'integer',
-            'expDate'=>'required',
-            'description'=>'required',
-            
-           ]);
-           
+
+            'productName' => 'required',
+            'category' => 'required',
+            'price' => 'integer',
+            'quantity' => 'integer',
+            'expDate' => 'required',
+            'description' => 'required',
+
+        ]);
+
         $product = product::find($id);
-        
-        if($req->hasFile('productImage')){
-            
+
+        if ($req->hasFile('productImage')) {
+
             $file = $req->file('productImage');
 
-            if($file->move('upload', $file->getClientOriginalName())){
-               
+            if ($file->move('upload', $file->getClientOriginalName())) {
+
                 $product->productName = $req->productName;
                 $product->description = $req->description;
                 $product->category = $req->category;
@@ -678,63 +718,67 @@ class adminController extends Controller
                 $product->price = $req->price;
                 $product->imageURL = $file->getClientOriginalName();
 
-                if($product->save()){
+                if ($product->save()) {
                     return redirect()->route('admin_customizeProducts');
-                }else{
+                } else {
                     return back();
                 }
             }
-        }else{
+        } else {
             return back();
         }
     }
 
-    public function deleteProduct(Request $req, $id){
+    public function deleteProduct(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $product = product::find($id);
 
         return view('user.admin.deleteProduct', $user)->with('product', $product);
-   
     }
 
-    public function deletedProduct(Request $req, $id){
+    public function deletedProduct(Request $req, $id)
+    {
 
-            product::find($id)->delete($id);
-            return redirect()->route('admin_customizeProducts');
-   
+        product::find($id)->delete($id);
+        return redirect()->route('admin_customizeProducts');
     }
 
-    public function checkNotifications(Request $req){
+    public function checkNotifications(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $notifications = productRequest::all();
 
-        return view('user.admin.checkNotifications',$user)->with('notification', $notifications);
+        return view('user.admin.checkNotifications', $user)->with('notification', $notifications);
     }
 
-    public function salesReport(Request $req){
+    public function salesReport(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $productRequest = productRequest::all();
 
-        return view('user.admin.salesReport',$user)->with('productRequest', $productRequest);
+        return view('user.admin.salesReport', $user)->with('productRequest', $productRequest);
     }
 
-    public function purchaseReport(Request $req){
+    public function purchaseReport(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $product = product::all();
 
-        return view('user.admin.purchaseReport',$user)->with('product', $product);
+        return view('user.admin.purchaseReport', $user)->with('product', $product);
     }
 
-    public function accepted(Request $req){
+    public function accepted(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $requestId = $req->get('requestId');
 
             $notification = productRequest::find($requestId);
@@ -742,14 +786,14 @@ class adminController extends Controller
             $notification->approval = 'accepted';
 
             $notification->save();
-        
         }
     }
 
-    public function rejected(Request $req){
+    public function rejected(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $requestId = $req->get('requestId');
 
             $notification = productRequest::find($requestId);
@@ -757,8 +801,6 @@ class adminController extends Controller
             $notification->approval = 'rejected';
 
             $notification->save();
-        
         }
     }
-
 }

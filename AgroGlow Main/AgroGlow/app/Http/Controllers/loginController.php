@@ -10,29 +10,31 @@ use Laravel\Socialite\Facades\Socialite;
 
 class loginController extends Controller
 {
-    
-    public function register(){
+
+    public function register()
+    {
         return view('register');
     }
 
-    public function registered(Request $req){
-        
+    public function registered(Request $req)
+    {
+
         $req->validate([
-            
-            'name'=>'required',
-            'userName'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            'password'=>'required',
-            'repassword'=>'required',
-            
-           ]);
+
+            'name' => 'required',
+            'userName' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+            'password' => 'required',
+            'repassword' => 'required',
+
+        ]);
 
 
         $user = new user;
 
-        if($req->password == $req->repassword){
+        if ($req->password == $req->repassword) {
 
             $user->name = $req->name;
             $user->userName = $req->userName;
@@ -43,49 +45,51 @@ class loginController extends Controller
             $user->image = 'null';
             $user->password = $req->password;
             $user->validity = 'valid';
-            if($user->save()){
+            if ($user->save()) {
                 return redirect()->route('login');
             }
-        }else{
+        } else {
             return redirect()->route('register');
         }
     }
 
 
-    public function login(){
+    public function login()
+    {
         return view('login');
     }
 
-    
-    public function verify(Request $req){
+
+    public function verify(Request $req)
+    {
 
         $req->validate([
-            
-            'userName'=>'required',
-            'password'=>'required',
-            
-           ]);
-        
-        $user = user::where('userName', $req->userName)
-                    ->where('password', $req->password)
-                    ->get();
 
-        
-        if(count($user) > 0){
-           
+            'userName' => 'required',
+            'password' => 'required',
+
+        ]);
+
+        $user = user::where('email', $req->userName)
+            ->where('password', $req->password)
+            ->get();
+
+
+        if (count($user) > 0) {
+
             $req->session()->put('userName', $req->userName);
             $req->session()->put('userType', $user[0]['userType']);
-            $req->session()->put('userId', $user[0]['userId']);
+            $req->session()->put('userId', $user[0]['id']);
             $req->session()->put('validity', $user[0]['validity']);
-            
-    		return redirect()->route('home');
-    	}else{
+
+            return redirect()->route('home');
+        } else {
             $req->session()->flash('error', 'invalid username/password');
-    		return redirect()->route('login');
-    	}
+            return redirect()->route('login');
+        }
     }
 
-     /**
+    /**
      * Redirect the user to the GitHub authentication page.
      *
      * @return \Illuminate\Http\Response
@@ -105,12 +109,11 @@ class loginController extends Controller
         $socialUser = Socialite::driver('google')->stateless()->user();
 
         $finduser = user::where('email', $socialUser->email)->first();
-                
+
         dd($socialUser);
-        if($finduser ){
+        if ($finduser) {
             return view('landingFarmer', $finduser);
-        }
-        else{
+        } else {
             $user = new user;
 
             $user->name = $socialUser->name;
@@ -123,11 +126,9 @@ class loginController extends Controller
             $user->password = '1234';
             $user->validity = 'valid';
 
-            if($user->save()){
+            if ($user->save()) {
                 return redirect()->route('login');
             }
         }
-       
-    
     }
 }

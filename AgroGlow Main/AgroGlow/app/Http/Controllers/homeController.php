@@ -15,8 +15,9 @@ use PDF;
 class homeController extends Controller
 {
 
-    public function downloadPDF() {
-        
+    public function downloadPDF()
+    {
+
         $show = productRequest::all();
         $notification = productRequest::all();
         $total = 0;
@@ -26,16 +27,16 @@ class homeController extends Controller
         $pendingRequests = 0;
 
 
-        if(count($notification)==0){
+        if (count($notification) == 0) {
             $totalRequest = 0;
             $total = 0;
             $acceptedRequest = 0;
             $tasks = 0;
             $pendingRequests = 0;
-        }else{           
-            for($i = 0; $i < count($notification); $i++){
+        } else {
+            for ($i = 0; $i < count($notification); $i++) {
                 $totalRequest = $totalRequest + 1;
-                if($notification[$i]['approval'] == 'served'){
+                if ($notification[$i]['approval'] == 'served') {
                     $total = $total + $notification[$i]['price'];
                     $acceptedRequest = $acceptedRequest + 1;
                 }
@@ -46,13 +47,14 @@ class homeController extends Controller
 
 
         $pdf = PDF::loadView('user.pdf', compact('show'), compact('total', 'tasks', 'pendingRequests'));
-        
+
         return $pdf->download('productRequest.pdf');
     }
 
-    public function home(Request $req){
+    public function home(Request $req)
+    {
 
-        $user = user::find($req->session()->get('userId'));
+        $user = user::where('email', $req->session()->get('userName'))->get();
         $products = product::all();
         $notification = productRequest::all();
         $total = 0;
@@ -62,74 +64,75 @@ class homeController extends Controller
         $pendingRequests = 0;
 
 
-        if(count($notification)==0){
+        if (count($notification) == 0) {
             $totalRequest = 0;
             $total = 0;
             $acceptedRequest = 0;
             $tasks = 0;
             $pendingRequests = 0;
-        }else{           
-            for($i = 0; $i < count($notification); $i++){
+        } else {
+            for ($i = 0; $i < count($notification); $i++) {
                 $totalRequest = $totalRequest + 1;
-                if($notification[$i]['approval'] == 'served'){
+                if ($notification[$i]['approval'] == 'served') {
                     $total = $total + $notification[$i]['price'];
                     $acceptedRequest = $acceptedRequest + 1;
                 }
             }
-            $tasks = ($acceptedRequest/$totalRequest)*100;
+            $tasks = ($acceptedRequest / $totalRequest) * 100;
             $pendingRequests = $totalRequest - $acceptedRequest;
         }
 
 
-        if($req->session()->get('userType') == 'admin'){
+        if ($req->session()->get('userType') == 'admin') {
             return redirect()->route('admin');
-        }
-        else if($req->session()->get('userType') == 'manager'){
+        } else if ($req->session()->get('userType') == 'manager') {
             return view('user.home', $user)->with('total', $total)->with('tasks', $tasks)->with('pendingRequests', $pendingRequests);
-        }
-        else if($req->session()->get('userType') == 'seller'){
+        } else if ($req->session()->get('userType') == 'seller') {
             return view('user.seller.homeSeller', $user);
-        }else if($req->session()->get('userType') == 'farmer'){
+        } else if ($req->session()->get('userType') == 'farmer') {
             return view('landingFarmer', $user)->with('product', $products)->with('user', 'user');
-        }else{
+        } else {
             return redirect()->route('login');
         }
     }
 
-    public function profile(Request $req){
+    public function profile(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $userInfo = user::where('userId', $user['userId'])
-                    ->get();
+            ->get();
 
-        return view('user.profile',$user)->with('userInfo', $userInfo);
+        return view('user.profile', $user)->with('userInfo', $userInfo);
     }
 
-    public function profile_edited(Request $req){
+    public function profile_edited(Request $req)
+    {
 
         $req->validate([
-            'name'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-           ]);
+            'name' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+        ]);
 
         $user = user::find($req->session()->get('userId'));
         $userInfo = user::where('userId', $user['userId'])
-                    ->get();
+            ->get();
 
         $user->name = $req->name;
         $user->email = $req->email;
         $user->DOB = $req->DOB;
         $user->contact = $req->contact;
 
-            if($user->save()){
-                return back();
-            }
+        if ($user->save()) {
+            return back();
+        }
     }
 
-    public function seeManagers(Request $req){
+    public function seeManagers(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $client = new Client();
@@ -138,7 +141,7 @@ class homeController extends Controller
         if ($response->getStatusCode() == 200) {
             $sellers = json_decode($response->getBody(), true);
             $seller = json_decode($sellers, true);
-            return view('user.seeSellers',$user)->with('seller', $seller);
+            return view('user.seeSellers', $user)->with('seller', $seller);
         } else {
             echo "Not get";
         }
@@ -151,7 +154,8 @@ class homeController extends Controller
         // return view('user.seeSellers',$user)->with('seller', $sellers);
     }
 
-    public function seeSellers(Request $req){
+    public function seeSellers(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $client = new Client();
@@ -160,7 +164,7 @@ class homeController extends Controller
         if ($response->getStatusCode() == 200) {
             $sellers = json_decode($response->getBody(), true);
             $seller = json_decode($sellers, true);
-            return view('user.seeSellers',$user)->with('seller', $seller);
+            return view('user.seeSellers', $user)->with('seller', $seller);
         } else {
             echo "Not get";
         }
@@ -173,7 +177,8 @@ class homeController extends Controller
         // return view('user.seeSellers',$user)->with('seller', $sellers);
     }
 
-    public function seeFarmers(Request $req){
+    public function seeFarmers(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $client = new Client();
@@ -182,7 +187,7 @@ class homeController extends Controller
         if ($response->getStatusCode() == 200) {
             $farmers = json_decode($response->getBody(), true);
             $farmer = json_decode($farmers, true);
-            return view('user.seeFarmers',$user)->with('farmer', $farmer);
+            return view('user.seeFarmers', $user)->with('farmer', $farmer);
         } else {
             echo "Not get";
         }
@@ -195,32 +200,34 @@ class homeController extends Controller
         // return view('user.seeFarmers',$user)->with('farmer', $farmers);
     }
 
-    public function addSeller(Request $req){
+    public function addSeller(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
-        return view('user.addSeller',$user);
+        return view('user.addSeller', $user);
         //return back();
     }
 
-    public function addedSeller(Request $req){
+    public function addedSeller(Request $req)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'userName'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            'password'=>'required',
-            'repassword'=>'required',
-            
-           ]);
+
+            'name' => 'required',
+            'userName' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+            'password' => 'required',
+            'repassword' => 'required',
+
+        ]);
 
         $user = user::find($req->session()->get('userId'));
         $seller = new user;
 
-        if($req->password == $req->password){
+        if ($req->password == $req->password) {
 
             $seller->name = $req->name;
             $seller->userName = $req->userName;
@@ -232,39 +239,41 @@ class homeController extends Controller
             $seller->password = $req->password;
             $seller->validity = 'valid';
 
-            if($seller->save()){
+            if ($seller->save()) {
                 return redirect()->route('customizeSeller');
             }
-        }else{           
+        } else {
             return redirect()->route('addSeller');
         }
     }
 
-    public function addFarmer(Request $req){
+    public function addFarmer(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
-        return view('user.addFarmer',$user);
+        return view('user.addFarmer', $user);
     }
 
-    public function addedFarmer(Request $req){
+    public function addedFarmer(Request $req)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'userName'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            'password'=>'required',
-            'repassword'=>'required',
-            
-           ]);
+
+            'name' => 'required',
+            'userName' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+            'password' => 'required',
+            'repassword' => 'required',
+
+        ]);
 
         $user = user::find($req->session()->get('userId'));
         $farmer = new user;
 
-        if($req->password == $req->password){
+        if ($req->password == $req->password) {
 
             $farmer->name = $req->name;
             $farmer->userName = $req->userName;
@@ -276,278 +285,288 @@ class homeController extends Controller
             $farmer->password = $req->password;
             $farmer->validity = 'valid';
 
-            if($farmer->save()){
+            if ($farmer->save()) {
                 return redirect()->route('customizeFarmer');
             }
-        }else{           
+        } else {
             return redirect()->route('addFarmer');
         }
     }
 
-    public function customizeSeller(Request $req){
+    public function customizeSeller(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $sellers = user::where('userType', 'seller')
-                        ->get();
+            ->get();
 
-        return view('user.customizeSeller',$user)->with('seller', $sellers);
+        return view('user.customizeSeller', $user)->with('seller', $sellers);
     }
 
-    public function editSeller(Request $req, $id){
+    public function editSeller(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $seller = user::where('userId', $id)->get();
 
-        return view('user.editSeller',$user)->with('seller', $seller);
+        return view('user.editSeller', $user)->with('seller', $seller);
     }
 
-    public function editedSeller(Request $req, $id){
+    public function editedSeller(Request $req, $id)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            
-           ]);
+
+            'name' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+
+        ]);
 
         $user = user::find($id);
 
-            $user->name = $req->name;
-            $user->email = $req->email;
-            $user->DOB = $req->DOB;
-            $user->contact = $req->contact;
+        $user->name = $req->name;
+        $user->email = $req->email;
+        $user->DOB = $req->DOB;
+        $user->contact = $req->contact;
 
-            if($user->save()){
-                return redirect()->route('customizeSeller');
-            }else{           
+        if ($user->save()) {
+            return redirect()->route('customizeSeller');
+        } else {
             return back();
         }
     }
 
-    public function validitySeller(Request $req){
+    public function validitySeller(Request $req)
+    {
 
-        if($req->ajax()){
+        if ($req->ajax()) {
 
             $userId = $req->get('userId');
 
             $user = user::find($userId);
 
-            if($user->validity == 'valid'){
+            if ($user->validity == 'valid') {
                 $user->validity = 'invalid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
                         'validity'  => 'Unblock',
-                       );
+                    );
                     echo json_encode($data);
                 }
-            }else{
+            } else {
                 $user->validity = 'valid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
                         'validity'  => 'Block',
-                       );
+                    );
                     echo json_encode($data);
                 }
             }
         }
-
     }
 
-    public function deleteSeller(Request $req){
+    public function deleteSeller(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $userId = $req->get('userId');
 
             user::find($userId)->delete($userId);
-
         }
-   
     }
 
-    public function customizeFarmer(Request $req){
+    public function customizeFarmer(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $farmers = user::where('userType', 'farmer')
-                        ->get();
+            ->get();
 
-        return view('user.customizeFarmer',$user)->with('farmer', $farmers);
+        return view('user.customizeFarmer', $user)->with('farmer', $farmers);
     }
 
-    public function editFarmer(Request $req, $id){
+    public function editFarmer(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $farmer = user::where('userId', $id)->get();
 
-        return view('user.editFarmer',$user)->with('farmer', $farmer);
+        return view('user.editFarmer', $user)->with('farmer', $farmer);
     }
 
-    public function editedFarmer(Request $req, $id){
+    public function editedFarmer(Request $req, $id)
+    {
 
         $req->validate([
-            
-            'name'=>'required',
-            'email'=>'required',
-            'DOB'=>'required',
-            'contact'=>'required|min:11',
-            
-           ]);
+
+            'name' => 'required',
+            'email' => 'required',
+            'DOB' => 'required',
+            'contact' => 'required|min:11',
+
+        ]);
 
         $user = user::find($id);
 
-            $user->name = $req->name;
-            $user->email = $req->email;
-            $user->DOB = $req->DOB;
-            $user->contact = $req->contact;
+        $user->name = $req->name;
+        $user->email = $req->email;
+        $user->DOB = $req->DOB;
+        $user->contact = $req->contact;
 
-            if($user->save()){
-                return redirect()->route('customizeFarmer');
-            }else{           
+        if ($user->save()) {
+            return redirect()->route('customizeFarmer');
+        } else {
             return back();
-            }
+        }
     }
 
-    public function validityFarmer(Request $req){
+    public function validityFarmer(Request $req)
+    {
 
-        if($req->ajax()){
+        if ($req->ajax()) {
 
             $userId = $req->get('userId');
 
             $user = user::find($userId);
 
-            if($user->validity == 'valid'){
+            if ($user->validity == 'valid') {
                 $user->validity = 'invalid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
                         'validity'  => 'Unblock',
-                       );
+                    );
                     echo json_encode($data);
                 }
-            }else{
+            } else {
                 $user->validity = 'valid';
-                if($user->save()){
+                if ($user->save()) {
                     $data = array(
                         'validity'  => 'Block',
-                       );
+                    );
                     echo json_encode($data);
                 }
             }
         }
-
     }
 
-    public function deleteFarmer(Request $req){
+    public function deleteFarmer(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $userId = $req->get('userId');
 
             user::find($userId)->delete($userId);
-
         }
-   
     }
 
-    public function addCategory(Request $req){
+    public function addCategory(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
-        return view('user.addCategory',$user);
+        return view('user.addCategory', $user);
     }
 
-    public function addedCategory(Request $req){
+    public function addedCategory(Request $req)
+    {
 
         $req->validate([
-            
-            'category'=>'required',
-            
-           ]);
+
+            'category' => 'required',
+
+        ]);
 
         $category = new category;
-        
+
         $category->catName = $req->category;
 
-        if($category->save()){
+        if ($category->save()) {
             return redirect()->route('seeCategories');
         }
     }
 
-    public function seeCategories(Request $req){
+    public function seeCategories(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $categories = category::all();
 
-        return view('user.seeCategories',$user)->with('category', $categories);
+        return view('user.seeCategories', $user)->with('category', $categories);
     }
 
-    public function editCategory(Request $req, $id){
+    public function editCategory(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $category = category::where('id', $id)->get();
 
-        return view('user.editCategory',$user)->with('category', $category);
+        return view('user.editCategory', $user)->with('category', $category);
     }
 
-    public function editedCategory(Request $req, $id){
+    public function editedCategory(Request $req, $id)
+    {
 
         $category = category::find($id);
 
-            $category->catName = $req->catName;
+        $category->catName = $req->catName;
 
-            if($category->save()){
-                return redirect()->route('seeCategories');
-            }else{           
+        if ($category->save()) {
+            return redirect()->route('seeCategories');
+        } else {
             return back();
-            }
+        }
     }
 
-    public function deletedCategory(Request $req){
+    public function deletedCategory(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $id = $req->get('id');
 
             category::find($id)->delete($id);
-
         }
-   
     }
 
-    public function addProduct(Request $req){
+    public function addProduct(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $category = category::all();
 
-        return view('user.addProduct',$user)->with('category', $category);
+        return view('user.addProduct', $user)->with('category', $category);
     }
 
-    public function addedProduct(Request $req){
+    public function addedProduct(Request $req)
+    {
 
         $req->validate([
-            
-            'productName'=>'required',
-            'category'=>'required',
-            'price'=>'integer',
-            'quantity'=>'integer',
-            'expDate'=>'required',
-            'description'=>'required',
-            'productImage'=>'required',
-            
-           ]);
+
+            'productName' => 'required',
+            'category' => 'required',
+            'price' => 'integer',
+            'quantity' => 'integer',
+            'expDate' => 'required',
+            'description' => 'required',
+            'productImage' => 'required',
+
+        ]);
 
         $product = new product;
-        
-        if($req->hasFile('productImage')){
-            
+
+        if ($req->hasFile('productImage')) {
+
             $file = $req->file('productImage');
 
-            if($file->move('upload', $file->getClientOriginalName())){
-               
+            if ($file->move('upload', $file->getClientOriginalName())) {
+
                 $product->productName = $req->productName;
                 $product->category = $req->category;
                 $product->price = $req->price;
@@ -556,52 +575,55 @@ class homeController extends Controller
                 $product->description = $req->description;
                 $product->imageURL = $file->getClientOriginalName();
 
-                if($product->save()){
+                if ($product->save()) {
                     return redirect()->route('customizeProducts');
-                }else{
+                } else {
                     echo 'error';
                 }
             }
-        }else{
+        } else {
             echo 'error';
         }
     }
 
-    public function customizeProducts(Request $req){
+    public function customizeProducts(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
 
         $products = product::all();
 
-        return view('user.customizeProducts',$user)->with('product', $products);
+        return view('user.customizeProducts', $user)->with('product', $products);
     }
 
-    public function editProduct(Request $req, $id){
-        
+    public function editProduct(Request $req, $id)
+    {
+
         $user = user::find($req->session()->get('userId'));
         $product = product::where('id', $id)->get();
         $categories = category::all();
 
-        return view('user.editProduct',$user)->with('product', $product)->with('category', $categories);
+        return view('user.editProduct', $user)->with('product', $product)->with('category', $categories);
     }
 
-    public function editedProduct(Request $req, $id){
+    public function editedProduct(Request $req, $id)
+    {
 
         $req->validate([
-            
-            'productName'=>'required',
-            'category'=>'required',
-            'price'=>'integer',
-            'quantity'=>'integer',
-            'expDate'=>'required',
-            'description'=>'required',
-            
-           ]);
+
+            'productName' => 'required',
+            'category' => 'required',
+            'price' => 'integer',
+            'quantity' => 'integer',
+            'expDate' => 'required',
+            'description' => 'required',
+
+        ]);
 
 
         $product = product::find($id);
-        
-        
+
+
         $product->productName = $req->productName;
         $product->description = $req->description;
         $product->category = $req->category;
@@ -609,43 +631,43 @@ class homeController extends Controller
         $product->quantity = $req->quantity;
         $product->price = $req->price;
 
-        if($product->save()){
+        if ($product->save()) {
             return redirect()->route('customizeProducts');
-        }else{
+        } else {
             return back();
         }
-
-
     }
 
-    public function deleteProduct(Request $req, $id){
+    public function deleteProduct(Request $req, $id)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $product = product::find($id);
 
         return view('user.deleteProduct', $user)->with('product', $product);
-   
     }
 
-    public function deletedProduct(Request $req, $id){
+    public function deletedProduct(Request $req, $id)
+    {
 
-            product::find($id)->delete($id);
-            return redirect()->route('customizeProducts');
-   
+        product::find($id)->delete($id);
+        return redirect()->route('customizeProducts');
     }
 
-    public function checkNotifications(Request $req){
+    public function checkNotifications(Request $req)
+    {
 
         $user = user::find($req->session()->get('userId'));
         $notifications = productRequest::all();
 
-        return view('user.checkNotifications',$user)->with('notification', $notifications);
+        return view('user.checkNotifications', $user)->with('notification', $notifications);
     }
 
-    public function accepted(Request $req){
+    public function accepted(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $requestId = $req->get('requestId');
 
             $notification = productRequest::find($requestId);
@@ -653,14 +675,14 @@ class homeController extends Controller
             $notification->approval = 'served';
 
             $notification->save();
-        
         }
     }
 
-    public function rejected(Request $req){
+    public function rejected(Request $req)
+    {
 
-        if($req->ajax()){
-            
+        if ($req->ajax()) {
+
             $requestId = $req->get('requestId');
 
             $notification = productRequest::find($requestId);
@@ -668,8 +690,6 @@ class homeController extends Controller
             $notification->approval = 'pending';
 
             $notification->save();
-        
         }
     }
-
 }
